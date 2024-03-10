@@ -11,8 +11,25 @@ Projeto para criar um cluster na AWS utilizando Terraform.
 - AWS CLI
 - Terraform CLI
 - Kubectl CLI
-- Credenciais de acesso AWS
 
+- AWS:
+    - Criar/Gerar credenciais de acesso AWS no IAM:
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+        
+
+
+- Terraform Cloud:
+    - Criar um **organization** e substituir no  arquivo **terraform.tf**
+    - Criar **Variable sets**:
+        - Criar uma entrada para: AWS_ACCESS_KEY_ID
+        - Criar uma entrada para: AWS_SECRET_ACCESS_KEY
+
+
+- Terraform CLI: Executar comonado abaxio para realizar login e gerar token de acesso.
+```
+$ terraform login
+```
 ------------
 
 **Executar**
@@ -36,9 +53,7 @@ $ terraform destroy
 
 ------------
 
-**Configurações adicionais após criação do cluster***
-
-
+**Configurações adicionais após criação do cluster**
 
 
 
