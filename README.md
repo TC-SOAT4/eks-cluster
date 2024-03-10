@@ -4,6 +4,8 @@
 
 Projeto para criar um cluster na AWS utilizando Terraform.
 
+O cluster criado utiliza a verão 1.29 do Kubernetes, contendo uma VPC com duas Subnest Privadas e duas Subnest Pública, um node com duas máquinas 't3.small'.
+
 ------------
 
 **Requisitos para executar**
