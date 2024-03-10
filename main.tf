@@ -82,7 +82,7 @@ module "eks" {
 }
 
 # Conf para acessar o cluster via kubectl. Substituir o principal_arn pelo usuario configurado no AWS CLI
-resource "aws_eks_access_entry" "user_thiago" {
+resource "aws_eks_access_entry" "user_custon_cluster" {
   cluster_name      = module.eks.cluster_name
   principal_arn     = "arn:aws:iam::643272946075:user/thiago"
   kubernetes_groups = []
