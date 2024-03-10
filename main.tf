@@ -1,14 +1,3 @@
-terraform {
-  backend "remote" {
-    # The name of your Terraform Cloud organization.
-    organization = "FIAP_POS"
-
-    # The name of the Terraform Cloud workspace to store Terraform state files in.
-    workspaces {
-      name = "lanchonete-terraform-eks"
-    }
-  }
-}
 provider "aws" {
   region = var.region
 }
