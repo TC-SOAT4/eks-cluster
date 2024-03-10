@@ -2,7 +2,7 @@ terraform {
 
   cloud {
     workspaces {
-      name = "learn-terraform-eks"
+      name = "lanchonete-terraform-eks"
     }
     organization = "FIAP_POS"
   }
@@ -27,6 +27,7 @@ terraform {
       source  = "hashicorp/cloudinit"
       version = "~> 2.3.2"
     }
+    
   }
 
   required_version = "~> 1.3"
