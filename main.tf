@@ -1,4 +1,14 @@
+terraform {
+  backend "remote" {
+    # The name of your Terraform Cloud organization.
+    organization = "FIAP_POS"
 
+    # The name of the Terraform Cloud workspace to store Terraform state files in.
+    workspaces {
+      name = "lanchonete-terraform-eks"
+    }
+  }
+}
 provider "aws" {
   region = var.region
 }
@@ -56,10 +66,10 @@ module "eks" {
   cluster_name    = local.cluster_name
   cluster_version = "1.29"
 
-  vpc_id                         = module.vpc.vpc_id
-  subnet_ids                     = module.vpc.private_subnets
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
 
-  cluster_endpoint_public_access = true
+  cluster_endpoint_public_access  = true
   cluster_endpoint_private_access = true
 
   eks_managed_node_group_defaults = {
