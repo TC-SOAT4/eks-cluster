@@ -25,6 +25,7 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.0.0"
 
+  #nome do cluster
   name = "tf-lanchonete-vpc"
 
   cidr = "10.0.0.0/16"
@@ -61,7 +62,6 @@ module "eks" {
   cluster_endpoint_public_access = true
   cluster_endpoint_private_access = true
 
-
   eks_managed_node_group_defaults = {
     ami_type = "AL2_x86_64"
 
@@ -81,22 +81,10 @@ module "eks" {
   }
 }
 
+# Conf para acessar o cluster via kubectl. Substituir o principal_arn pelo usuario configurado no AWS CLI
 resource "aws_eks_access_entry" "user_thiago" {
   cluster_name      = module.eks.cluster_name
   principal_arn     = "arn:aws:iam::643272946075:user/thiago"
   kubernetes_groups = []
   type              = "STANDARD"
-}
-
-module "eks_auth" {
-  source = "aidanmelen/eks-auth/aws"
-  eks    = module.eks
-
-  map_users = [
-    {
-      userarn  = "arn:aws:iam::643272946075:user/thiago"
-      username = "thiago"
-      groups   = ["system:masters"]
-    },
-  ]
 }
