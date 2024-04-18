@@ -16,7 +16,14 @@ variable "awsIamRole" {
   default = "LabRole"
 }
 
+#Ajustar para o iam do conta
+variable "principalArn" {
+  default = "arn:aws:iam::797459365217:role/voclabs"
+}
+
 variable "authenticationMode" {
   default = "API_AND_CONFIG_MAP"
 }
+
+
 

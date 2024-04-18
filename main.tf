@@ -118,17 +118,17 @@ resource "aws_eks_addon" "core_dns" {
 }
 
 # Conf para acessar o cluster via kubectl. Substituir o principal_arn pelo usuario configurado no AWS CLI
-resource "aws_eks_access_entry" "user_custon_cluster" {
-  cluster_name      = local.cluster_name
-  principal_arn = "arn:aws:iam::797459365217:role/voclabs"
+resource "aws_eks_access_entry" "access" {
+  cluster_name      = aws_eks_cluster.tr-lanchonete-eks.name
+  principal_arn = var.principalArn
   kubernetes_groups = []
   type              = "STANDARD"
 }
 
-resource "aws_eks_access_policy_association" "example" {
+resource "aws_eks_access_policy_association" "access_policy_association" {
   cluster_name  = aws_eks_cluster.tr-lanchonete-eks.name
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-  principal_arn = "arn:aws:iam::797459365217:role/voclabs"
+  principal_arn = var.principalArn
 
   access_scope {
     type       = "cluster"
