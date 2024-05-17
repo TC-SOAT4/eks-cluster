@@ -2,15 +2,6 @@ provider "aws" {
   region = var.region
 }
 
-# Filter out local zones, which are not currently supported 
-# with managed node groups
-data "aws_availability_zones" "available" {
-  filter {
-    name   = "opt-in-status"
-    values = ["opt-in-not-required"]
-  }
-}
-
 locals {
   cluster_name = "tr-lanchonete-eks-${random_string.suffix.result}"
 }
@@ -20,70 +11,126 @@ resource "random_string" "suffix" {
   special = false
 }
 
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "5.0.0"
+resource "aws_eks_cluster" "tr-lanchonete-eks" {
 
-  #nome do cluster
-  name = "tf-lanchonete-vpc"
-
-  cidr = "10.0.0.0/16"
-  azs  = slice(data.aws_availability_zones.available.names, 0, 2)
-
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
-  public_subnets  = ["10.0.3.0/24", "10.0.4.0/24"]
-
-  enable_nat_gateway   = true
-  single_nat_gateway   = true
-  enable_dns_hostnames = true
-
-  public_subnet_tags = {
-    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-    "kubernetes.io/role/elb"                      = 1
+  kubernetes_network_config {
+    ip_family         = "ipv4"
+    service_ipv4_cidr = var.serviceIpv4
   }
 
-  private_subnet_tags = {
-    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-    "kubernetes.io/role/internal-elb"             = 1
+  name     = local.cluster_name
+  role_arn = data.aws_iam_role.name.arn
+  version  = var.eksVersion
+
+  vpc_config {
+    endpoint_private_access = "true"
+    endpoint_public_access  = "true"
+    public_access_cidrs     = ["0.0.0.0/0"]
+    subnet_ids              = [for subnet in data.aws_subnet.selected : subnet.id if subnet.availability_zone != "us-east-1e"]
   }
+
+  access_config {
+    authentication_mode = var.authenticationMode
+  }
+
 }
 
-module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = "20.5.3"
+resource "aws_eks_node_group" "tr-lanchonete-eks-node" {
+  ami_type      = "AL2_x86_64"
+  capacity_type = "ON_DEMAND"
+  cluster_name  = local.cluster_name
+  disk_size     = 20
 
-  cluster_name    = local.cluster_name
-  cluster_version = "1.29"
+  instance_types = ["t3.micro"]
 
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnets
+  node_group_name = "node-${local.cluster_name}"
+  node_role_arn   = data.aws_iam_role.name.arn
+  subnet_ids      = [for subnet in data.aws_subnet.selected : subnet.id if subnet.availability_zone != "us-east-1e"]
+  version         = var.eksVersion
 
-  cluster_endpoint_public_access  = true
-  cluster_endpoint_private_access = true
-
-  eks_managed_node_group_defaults = {
-    ami_type = "AL2_x86_64"
-
+  scaling_config {
+    desired_size = 1
+    min_size     = 1
+    max_size     = 2
   }
 
-  eks_managed_node_groups = {
-    one = {
-      name = "node-group"
+  depends_on = [aws_eks_cluster.tr-lanchonete-eks]
+}
 
-      instance_types = ["t3.medium"]
+resource "aws_eks_addon" "aws_ebs_csi_driver" {
+  cluster_name                = local.cluster_name
+  addon_name                  = "aws-ebs-csi-driver"
+  addon_version               = "v1.28.0-eksbuild.1"
+  resolve_conflicts_on_create = "NONE"
+  resolve_conflicts_on_update = "NONE"
 
-      min_size     = 2
-      max_size     = 2
-      desired_size = 2
-    }
+  depends_on = [aws_eks_node_group.tr-lanchonete-eks-node]
+}
 
-  }
+# resource "aws_security_group_rule" "allow_eks_to_rds" {
+#   type                     = "ingress"
+#   from_port                = 1433
+#   to_port                  = 1433
+#   protocol                 = "tcp"
+#   security_group_id        = data.terraform_remote_state.rds.outputs.security_group_id
+#   source_security_group_id = data.aws_security_group.eks-sg.id
+# }
+
+resource "aws_security_group" "eks-sg" {
+  name        = "eks-default-sg"
+  description = "Default security group for the EKS cluster"
+  vpc_id      = aws_eks_cluster.tr-lanchonete-eks.vpc_config[0].vpc_id
+
+}
+
+resource "aws_eks_addon" "vpc_cni" {
+  cluster_name                = local.cluster_name
+  addon_name                  = "vpc-cni"
+  addon_version               = "v1.16.0-eksbuild.1"
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  depends_on = [aws_eks_node_group.tr-lanchonete-eks-node]
+}
+
+resource "aws_eks_addon" "kube_proxy" {
+  cluster_name                = local.cluster_name
+  addon_name                  = "kube-proxy"
+  addon_version               = "v1.29.0-eksbuild.1"
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  depends_on = [
+    aws_eks_addon.vpc_cni
+  ]
+}
+
+resource "aws_eks_addon" "core_dns" {
+  cluster_name                = local.cluster_name
+  addon_name                  = "coredns"
+  addon_version               = "v1.11.1-eksbuild.4"
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  depends_on = [
+    aws_eks_addon.vpc_cni
+  ]
 }
 
 # Conf para acessar o cluster via kubectl. Substituir o principal_arn pelo usuario configurado no AWS CLI
-resource "aws_eks_access_entry" "user_custon_cluster" {
-  cluster_name      = module.eks.cluster_name
-  principal_arn     = "arn:aws:iam::643272946075:user/thiago"
+resource "aws_eks_access_entry" "access" {
+  cluster_name      = aws_eks_cluster.tr-lanchonete-eks.name
+  principal_arn     = var.principalArn
   kubernetes_groups = []
   type              = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "access_policy_association" {
+  cluster_name  = aws_eks_cluster.tr-lanchonete-eks.name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = var.principalArn
+
+  access_scope {
+    type = "cluster"
+  }
 }
