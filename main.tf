@@ -41,7 +41,7 @@ resource "aws_eks_node_group" "tr-lanchonete-eks-node" {
   cluster_name  = local.cluster_name
   disk_size     = 20
 
-  instance_types = ["t3.micro"]
+  instance_types = ["t3.medium"]
 
   node_group_name = "node-${local.cluster_name}"
   node_role_arn   = data.aws_iam_role.name.arn
