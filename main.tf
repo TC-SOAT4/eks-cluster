@@ -41,7 +41,7 @@ resource "aws_eks_node_group" "tr-lanchonete-eks-node" {
   cluster_name  = local.cluster_name
   disk_size     = 20
 
-  instance_types = ["t3.medium"]
+  instance_types = ["t3.micro"]
 
   node_group_name = "node-${local.cluster_name}"
   node_role_arn   = data.aws_iam_role.name.arn
@@ -120,7 +120,7 @@ resource "aws_eks_addon" "core_dns" {
 # Conf para acessar o cluster via kubectl. Substituir o principal_arn pelo usuario configurado no AWS CLI
 resource "aws_eks_access_entry" "access" {
   cluster_name      = aws_eks_cluster.tr-lanchonete-eks.name
-  principal_arn = var.principalArn
+  principal_arn     = var.principalArn
   kubernetes_groups = []
   type              = "STANDARD"
 }
@@ -131,6 +131,6 @@ resource "aws_eks_access_policy_association" "access_policy_association" {
   principal_arn = var.principalArn
 
   access_scope {
-    type       = "cluster"
+    type = "cluster"
   }
 }
