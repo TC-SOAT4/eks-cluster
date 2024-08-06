@@ -18,7 +18,7 @@ variable "awsIamRole" {
 
 #Ajustar para o iam do conta
 variable "principalArn" {
-  default = "arn:aws:iam::797459365217:role/voclabs"
+  default = "arn:aws:iam::786426553713:role/voclabs"
 }
 
 variable "authenticationMode" {
